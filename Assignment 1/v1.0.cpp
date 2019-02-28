@@ -23,16 +23,17 @@
 #include <iostream>
 #include <cstring>
 #include <fstream>
+#include <map>
 using namespace std;
 
 class Book {
 private:
-    char isbn[6]; /// fixed
-    char author [100]; /// variable
-    char title [100]; /// variable
-    char year[5]; /// fixedd
-    char pages[5] ; ///variable max 9999 page
-    char  price[20] ;
+    char isbn[6];             /// always 5 chars
+    char author [100];         /// variable
+    char title [100];         /// variable
+    char year[5];             /// always 4 chars
+    char pages[5] ;         ///variable max 9999 page
+    char price[20] ;
     int RRN;
     static int KEY ;
 public:
@@ -54,7 +55,6 @@ public:
         strcpy(this->year  , _year);
         strcpy(this->pages , _pages);
         strcpy(this->price , _price);
-        this->price =  _price;
         RRN = -1;
 
     }
@@ -83,8 +83,10 @@ public:
         cout<<"input the Book price : ";
         cin>>obj.price;
     }
-    void addRecordtofile(ostream &out ){
-        RRN =KEY++;                     /// giving RRN to every object if added to the file only otherwise = -1;
+    void addRecordtofile(ostream &out , map<string , int> &mmap ){
+        RRN =KEY++;/// giving RRN to every object if added to the file only otherwise = -1;
+        string strISBN = this->isbn;
+        mmap[strISBN] = RRN;
         out<<strlen(this->isbn)<<this->isbn;
         out<<strlen(this->author)<<this->author;
         out<<strlen(this->title)<<this->title;
@@ -92,23 +94,59 @@ public:
         out<<strlen(this->pages)<<this->pages;
         out<< strlen(this->price)<<this->price<<'|';
     }
+    void writeRecordtofile(ostream &out , map<string , int> &mmap ){
+        RRN =KEY++;/// giving RRN to every object if added to the file only otherwise = -1;
+        string strISBN = this->isbn;
+        mmap[strISBN] = RRN;
+        int len = strlen(this->isbn);
+        out.write((char *)&len ,sizeof(len) );
+        out.write(this->isbn , sizeof(this->isbn));
+        len = strlen(this->author);
+        out.write((char *)&len ,sizeof(len) );
+        out.write(this->author , sizeof(author));
+        len = strlen(this->title);
+        out.write((char *)&len ,sizeof(len) );
+        out.write(this->title , sizeof(title));
+        len = strlen(this->year);
+        out.write(this->year , sizeof(year));
+        len = strlen(this->pages);
+        out.write(this->pages , sizeof(pages));
+        len = strlen(this->price);
+        out.write(this->price , sizeof(price));
+        char del = '|';
+        out.write((char *)&del , sizeof(del));
+    }
+
 
 
 };
+/// we have problem with the deleting because i think we have a  problem with the size of Book , because of not using write
+/// the deleting working iff we write it during the run time
+void deleteRecord(fstream &in , map<string , int> &mmap , string ISBN){
+    in.seekg(0,in.beg);
+    in.seekp(mmap[ISBN] *sizeof(Book),ios::beg);
+    cout<<mmap[ISBN]<<" ";
+    cout<< sizeof(Book);
+    in.put('*');
+
+}
 int Book :: KEY = 0 ;
 int main() {
     Book b1("123" , "ahmed hanfy","Kafka On The Shore" ,"1997" , "231" , "13.5" );
-    cout<<b1;
-    Book b2 ;
+    Book b2("125" , "harouki","Kafka" ,"2003" , "452" , "62.5" );
+//    cout<<b1;
 
-    ofstream out;
-    out.open("out.txt");
+    map<string , int> RRNINDX;  /// mapping all the isbns and searching in O(1)
+    fstream out;
+    out.open("out.txt", ios::in | ios::out );
 
     if(out.fail()){
         cout<<"failed to open the output file\n";
     }
     else {
-        b1.addRecordtofile(out);
+        b1.writeRecordtofile(out , RRNINDX);
+        b2.writeRecordtofile(out , RRNINDX);
     }
+    deleteRecord(out , RRNINDX ,"125");
 
 }
