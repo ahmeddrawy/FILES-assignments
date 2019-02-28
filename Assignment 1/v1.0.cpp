@@ -9,7 +9,8 @@
 
 /*
  *  1- todo  we have a problem when the user inputs data bigger than the size of the char array
- *
+ *   todo we need to store the RRN in a file to make the update and deletio possible for any record not the added in the runtime only
+ *   
  */
 /*  checklist
  *  1 - read from file
@@ -125,8 +126,6 @@ public:
 void deleteRecord(fstream &in , map<string , int> &mmap , string ISBN){
     in.seekg(0,in.beg);
     in.seekp(mmap[ISBN] *sizeof(Book),ios::beg);
-    cout<<mmap[ISBN]<<" ";
-    cout<< sizeof(Book);
     in.put('*');
 
 }
