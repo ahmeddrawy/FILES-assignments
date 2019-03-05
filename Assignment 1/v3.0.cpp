@@ -1,16 +1,13 @@
 /**
  *  Description: Creating a library of books using files processing and manipulation
- *  author(s) : Ahmed Mohammad Hanafy 201703**
+ *  author(s) : Ahmed Mohammad Hanafy 20170357
  *              Ahmad Khaled Fawzy    20170377
  *  version : 3.0
  *  Date : March 1st 2019
  */
 
 /*
- *  1- TODO create a static map instead of passing a map by reference each time we initialize a new BOOK object
- *  2- TODO improve code to make use of delimiters (optional) 
  *  6- TODO update book by ISBN
- *  7- TODO fix the problem where inserting characters less than the array size would cause garbage to be printed
  */
 
 /**
@@ -68,13 +65,14 @@ public:
 //        cout<<"RRN: "<<obj.RRN<<endl;  /// we don't need the RRN in printing , HANAFY
     }
     friend  istream &operator >> (istream & in , Book &obj){
+        memset(&obj.author , 0, sizeof(obj) );
         cout<<"input ISBN: ";
         in>>obj.isbn;
         cout<<"input author name: ";
         in.ignore();
-        in.getline(obj.author,100);
+        in.getline(obj.author,100,'\n');
         cout<<"input title: ";
-        in.getline(obj.title,100);
+        in.getline(obj.title,100,'\n');
         cout<<"input the Book publish year: ";
         in>>obj.year;
         cout<<"input number of pages: ";
@@ -83,9 +81,10 @@ public:
         in>>obj.price;
         return in ;
     }
-    void writeRecordtofile( fstream &out , map<string, long long> &isbnMap, map<string
-            , long long> &titleMap , map<string ,Book> & isbnObject )
+    void writeRecordtofile( fstream &out , map<string, long long> &isbnMap,
+                            map<string, long long> &titleMap , map<string ,Book> & isbnObject )
     {
+        out.seekp(0, ios::end );
         RRN = out.tellp();
 /*       cout<<"RRN : "<<RRN<<endl;
         cout<<*this<<endl;
@@ -112,7 +111,8 @@ public:
         len = strlen(this->price);
         out.write((char *)&len ,sizeof(len) );
         out.write(this->price , len);
-        char del = '|';
+
+        char del = '|'; /// we don't put the delimmiter size
         out.write(&del , sizeof(del));
     }
     static void menu(){                          /// utility
@@ -139,7 +139,7 @@ public:
              */
             int option ;
             do{
-//                Book::menu();
+                Book::menu();
                 cin>>option;
                 switch (option ){
                     case 0 :
@@ -221,12 +221,15 @@ public:
                 }
                 booksFile.seekp(byteOffset, ios::beg);
 
-                for (int i=0; i<6; ++i)
-                {
+                for (int i=0; i<6; ++i) {
                     int length;
                     booksFile.read((char *) &length, sizeof(length));
-                    char *BUFFER = new char[length];    /// todo need to check this
+                    char *BUFFER = new char[length + 1];    /// done +1 for the delimiters
+                    for(int j = 0; j < length + 1; ++j){
+                        BUFFER[j] = 0;
+                    }
                     booksFile.read(BUFFER, length);
+
                     switch(i)
                     {
                         case 0:
@@ -273,7 +276,8 @@ public:
      *  @param string, map<string, long long>, fstream
      *  @return void
      */
-    static void printBook (string title, map<string, long long> &titleMap, fstream &booksFile)
+    static void printBook (string title, map<string, long long> &titleMap, fstream &booksFile
+            , map<string , Book> &isbnObject)
     {
         long long byteOffset = titleMap[title];
         booksFile.seekg(byteOffset, ios::beg);
@@ -290,7 +294,8 @@ public:
             {
                 int length;
                 booksFile.read((char *) &length, sizeof(length));
-                char *BUFFER = new char[length];
+                char *BUFFER = new char[length +1];
+                BUFFER[length]=0;
                 booksFile.read(BUFFER, length);
                 switch(i)
                 {
@@ -320,22 +325,22 @@ public:
     }
 };
 
-///todo mapping all the books in a string to Book * map to update the books in it except for the isbn update we will map a new book
 
 
 int main() {
-    freopen("/home/www/Desktop/files/Files Assignments/Assignment 1/in.txt", "r",stdin);
-    Book b1,b2,b3;
-/*
+//    freopen("/home/www/Desktop/files/Files Assignments/Assignment 1/in.txt", "r",stdin);
+//    Book b1,b2,b3;
+
 
     Book b1("123" , "ahmed hanfy","Kafka On The Shore" ,"1997" , "231" , "13.5" );
     Book b2("125" , "harouki","Kafka" ,"2003" , "452" , "62.5" );
     Book b3("1234", "Ahmad Khaled", "Ahbabt Waghdan", "2018", "6", "2");
-*/
+/*
     cin>>b1;
     cin>>b2;
     cin>>b3;
 
+*/
     map<string , long long> isbnMap;  /// mapping ISBN to RRN
     map<string , long long> titleMap;
     map<string , Book> isbnObject; /// mapping with the isbn to book, when writing to file only
@@ -351,13 +356,18 @@ int main() {
         b3.writeRecordtofile(out, isbnMap, titleMap , isbnObject);
     }
 //    Book::deleteBook("125", isbnMap, out);
-    Book::printBooks(out, isbnMap);
+//    Book::printBooks(out, isbnMap);
     Book::update(isbnObject , "125" ,out, isbnMap , titleMap);
-    Book::update(isbnObject , "123" ,out, isbnMap , titleMap);
+//    Book::update(isbnObject , "123" ,out, isbnMap , titleMap);
+//    Book::printBooks(out, isbnMap);
 //    cout<<"MAIN \n"<<endl;
 //    for(auto it : isbnObject)cout<<it.second<<endl;
-    Book::printBooks(out ,isbnMap );
+
 //    Book::deleteBook("123", isbnMap, out);
-//    Book::printBook("Kafka", titleMap, out);
-//    Book::printBook("Kafka On The Shore", titleMap, out);
+//    Book::printBooks(out ,isbnMap );
+//    Book::printBooks(out, isbnMap);
+    Book::printBook("Kafka", titleMap, out, isbnObject);
+//    Book::printBook("Kafka On The Shore", titleMap, out , isbnObject);
+//    Book::printBook("Ahbabt Waghdan", titleMap, out , isbnObject);
+
 }
