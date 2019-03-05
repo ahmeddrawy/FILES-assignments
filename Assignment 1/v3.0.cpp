@@ -65,29 +65,31 @@ public:
         cout<<"Year: "<<obj.year <<endl;
         cout<<"Number of pages: "<<obj.pages<<endl;
         cout<<"Price: " <<obj.price << "$" <<endl;
-        cout<<"RRN: "<<obj.RRN<<endl;
+//        cout<<"RRN: "<<obj.RRN<<endl;  /// we don't need the RRN in printing , HANAFY
     }
     friend  istream &operator >> (istream & in , Book &obj){
         cout<<"input ISBN: ";
-        cin>>obj.isbn;
+        in>>obj.isbn;
         cout<<"input author name: ";
-        cin.ignore();
-        cin.getline(obj.author,100);
+        in.ignore();
+        in.getline(obj.author,100);
         cout<<"input title: ";
-        //cin.ignore();
-        cin.getline(obj.title,100);
+        in.getline(obj.title,100);
         cout<<"input the Book publish year: ";
-        cin>>obj.year;
+        in>>obj.year;
         cout<<"input number of pages: ";
-        cin>>obj.pages;
+        in>>obj.pages;
         cout<<"input book price: ";
-        cin>>obj.price;
+        in>>obj.price;
+        return in ;
     }
     void writeRecordtofile( fstream &out , map<string, long long> &isbnMap, map<string
             , long long> &titleMap , map<string ,Book> & isbnObject )
     {
         RRN = out.tellp();
-        cout<<"RRN : "<<RRN<<endl;
+/*       cout<<"RRN : "<<RRN<<endl;
+        cout<<*this<<endl;
+        */
         string strISBN = this->isbn;
         isbnMap[strISBN] = RRN;         /// i think we don't have to update the object in file because we rewrite it and updat in the map
         isbnObject[strISBN] = *this;
@@ -127,18 +129,17 @@ public:
             ,fstream &out , map<string, long long> &isbnMap, map<string
             , long long> &titleMap){
             Book currBook  = isbnObject[BookISBN];
-            cout<<"***********\n"<<currBook<<"************\n";
             /** the update is working with this right now  5:14AM 05/03/19 , HANAFY
              * cout<<"GIVE me the New record \n";
                 cin>>currBook;
 
-                */
 
-//            currBook.writeRecordtofile(out ,isbnMap,titleMap , isbnObject );
-//        return;
+               currBook.writeRecordtofile(out ,isbnMap,titleMap , isbnObject );
+            return;
+             */
             int option ;
             do{
-                Book::menu();
+//                Book::menu();
                 cin>>option;
                 switch (option ){
                     case 0 :
@@ -178,14 +179,17 @@ public:
                         break;
                     default:
                         cout<<"Give me an option";
+                        break;
 
                 }
             }
             while(option != 0 );
-//            fstream fout ;
-//            out.open("out.txt",ios::app);   /// when sending the same file in the main we have a problem by overwriting multiple records
+        /*  fstream fout ;
+            out.open("out.txt",ios::app);   /// when sending the same file in the main we have a problem by overwriting multiple records
                                             /// i haven't checked why yet , but now we have garbage in the isbn of the first record i don't know why to
-
+          */
+            cout<<currBook<<endl;
+            cout<<"in the upate\n";
             currBook.writeRecordtofile(out ,isbnMap,titleMap , isbnObject );
 
     }
@@ -321,14 +325,22 @@ public:
 
 int main() {
     freopen("/home/www/Desktop/files/Files Assignments/Assignment 1/in.txt", "r",stdin);
+    Book b1,b2,b3;
+/*
+
     Book b1("123" , "ahmed hanfy","Kafka On The Shore" ,"1997" , "231" , "13.5" );
     Book b2("125" , "harouki","Kafka" ,"2003" , "452" , "62.5" );
     Book b3("1234", "Ahmad Khaled", "Ahbabt Waghdan", "2018", "6", "2");
+*/
+    cin>>b1;
+    cin>>b2;
+    cin>>b3;
+
     map<string , long long> isbnMap;  /// mapping ISBN to RRN
     map<string , long long> titleMap;
     map<string , Book> isbnObject; /// mapping with the isbn to book, when writing to file only
     fstream out;
-    out.open("out.txt", ios::in | ios::out  );/// made app by Hanafy
+    out.open("out.txt", ios::in | ios::out  );
     if(out.fail()){
         cout<<"failed to open the output file\n";
     }
@@ -339,7 +351,7 @@ int main() {
         b3.writeRecordtofile(out, isbnMap, titleMap , isbnObject);
     }
 //    Book::deleteBook("125", isbnMap, out);
-//    Book::printBooks(out, isbnMap);
+    Book::printBooks(out, isbnMap);
     Book::update(isbnObject , "125" ,out, isbnMap , titleMap);
     Book::update(isbnObject , "123" ,out, isbnMap , titleMap);
 //    cout<<"MAIN \n"<<endl;
