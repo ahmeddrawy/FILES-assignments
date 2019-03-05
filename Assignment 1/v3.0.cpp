@@ -320,6 +320,7 @@ public:
 
 
 int main() {
+    freopen("/home/www/Desktop/files/Files Assignments/Assignment 1/in.txt", "r",stdin);
     Book b1("123" , "ahmed hanfy","Kafka On The Shore" ,"1997" , "231" , "13.5" );
     Book b2("125" , "harouki","Kafka" ,"2003" , "452" , "62.5" );
     Book b3("1234", "Ahmad Khaled", "Ahbabt Waghdan", "2018", "6", "2");
@@ -340,6 +341,7 @@ int main() {
 //    Book::deleteBook("125", isbnMap, out);
 //    Book::printBooks(out, isbnMap);
     Book::update(isbnObject , "125" ,out, isbnMap , titleMap);
+    Book::update(isbnObject , "123" ,out, isbnMap , titleMap);
 //    cout<<"MAIN \n"<<endl;
 //    for(auto it : isbnObject)cout<<it.second<<endl;
     Book::printBooks(out ,isbnMap );
