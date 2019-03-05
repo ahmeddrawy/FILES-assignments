@@ -13,6 +13,14 @@
  *  7- TODO fix the problem where inserting characters less than the array size would cause garbage to be printed
  */
 
+/**
+ * todo we have problem with updating the ISBN ,HANAFY
+ *
+ *
+ *
+ *
+ */
+
 #include <iostream>
 #include <cstring>
 #include <fstream>
@@ -75,16 +83,16 @@ public:
         cout<<"input book price: ";
         cin>>obj.price;
     }
-    void writeRecordtofile( fstream &out , map<string, long long> &mmap, map<string
+    void writeRecordtofile( fstream &out , map<string, long long> &isbnMap, map<string
             , long long> &titleMap , map<string ,Book> & isbnObject )
     {
         RRN = out.tellp();
+        cout<<"RRN : "<<RRN<<endl;
         string strISBN = this->isbn;
-        mmap[strISBN] = RRN;
-        string sISBN = this->isbn;
-        isbnObject[sISBN] = *this;
+        isbnMap[strISBN] = RRN;         /// i think we don't have to update the object in file because we rewrite it and updat in the map
+        isbnObject[strISBN] = *this;
         titleMap[this->title] = RRN;
-        int len = strlen(this->isbn);
+        int len = strlen(this->isbn);   /// we need to check this too
         out.write((char *)&len ,sizeof(len) );
         out.write(this->isbn , len);
         len = strlen(this->author);
@@ -116,44 +124,56 @@ public:
         cout<<"0 - No further updates needed \n";
     }
     static  void update(map <string  ,Book> & isbnObject , string BookISBN
-             , map<string, long long> &mmap, map<string
+            ,fstream &out , map<string, long long> &isbnMap, map<string
             , long long> &titleMap){
             Book currBook  = isbnObject[BookISBN];
-            cout<<currBook<<endl;
+            cout<<"***********\n"<<currBook<<"************\n";
+            /** the update is working with this right now  5:14AM 05/03/19 , HANAFY
+             * cout<<"GIVE me the New record \n";
+                cin>>currBook;
 
+                */
+
+//            currBook.writeRecordtofile(out ,isbnMap,titleMap , isbnObject );
+//        return;
             int option ;
             do{
                 Book::menu();
                 cin>>option;
-                cin.ignore();
                 switch (option ){
                     case 0 :
                         cout<<"Good Bye \n";
                         break;
                     case 1:
                         cout<<"Give me the ISBN \n";
+                        cin.ignore();
                         cin.getline(currBook.isbn , 6);
                         cout<<currBook.isbn<<endl;
                         break;
                     case 2:
                         cout<<"Give  me the Author\n";
+                        cin.ignore();
                         cin.getline(currBook.author , 100);
                         break;
 
                     case 3:
                         cout<<"Give me the Title \n";
+                        cin.ignore();
                         cin.getline(currBook.title , 100);
                         break;
                     case 4:                 ///year     5
                         cout<<"Give me the Year \n";
+                        cin.ignore();
                         cin.getline(currBook.year , 5);
                         break;
                     case 5:                 /// page    5
                         cout<<"Give me the Pages \n";
+                        cin.ignore();
                         cin.getline(currBook.pages, 5);
                         break;
                     case 6:                 /// price 20
                         cout<<"Give me the Price \n";
+                        cin.ignore();
                         cin.getline(currBook.price , 20);
                         break;
                     default:
@@ -162,10 +182,11 @@ public:
                 }
             }
             while(option != 0 );
-            fstream out ;
-            out.open("out.txt",ios::app);   /// when sending the same file in the main we have a problem by overwriting multiple records
-                                            /// i haven't checked why yet , but now we have garbage in the isbn of the first record i don't know why too
-            currBook.writeRecordtofile(out ,mmap,titleMap , isbnObject );
+//            fstream fout ;
+//            out.open("out.txt",ios::app);   /// when sending the same file in the main we have a problem by overwriting multiple records
+                                            /// i haven't checked why yet , but now we have garbage in the isbn of the first record i don't know why to
+
+            currBook.writeRecordtofile(out ,isbnMap,titleMap , isbnObject );
 
     }
 
@@ -173,7 +194,7 @@ public:
      *  @param fstream, map<string, long long>
      *  @return void
      */
-    static void printBooks (fstream &booksFile, map<string, long long> &mmap)
+    static void printBooks (fstream &booksFile, map<string, long long> &isbnMap)
     {
         booksFile.seekg(0, ios::end);
         if(booksFile.tellg() == 0) /// Checking if the file is empty before reading from it
@@ -183,7 +204,7 @@ public:
         else
         {
             booksFile.seekg(0, ios::beg);
-            for(auto itr = mmap.begin(); itr != mmap.end(); ++itr) ///using map to access all byte-offsets in records file.
+            for(auto itr = isbnMap.begin(); itr != isbnMap.end(); ++itr) ///using map to access all byte-offsets in records file.
             {
                 cout << "=====================" << endl;
                 long long byteOffset = itr->second;
@@ -200,7 +221,7 @@ public:
                 {
                     int length;
                     booksFile.read((char *) &length, sizeof(length));
-                    char *BUFFER = new char[length];
+                    char *BUFFER = new char[length];    /// todo need to check this
                     booksFile.read(BUFFER, length);
                     switch(i)
                     {
@@ -306,7 +327,7 @@ int main() {
     map<string , long long> titleMap;
     map<string , Book> isbnObject; /// mapping with the isbn to book, when writing to file only
     fstream out;
-    out.open("out.txt", ios::in | ios::out );
+    out.open("out.txt", ios::in | ios::out  );/// made app by Hanafy
     if(out.fail()){
         cout<<"failed to open the output file\n";
     }
@@ -317,8 +338,10 @@ int main() {
         b3.writeRecordtofile(out, isbnMap, titleMap , isbnObject);
     }
 //    Book::deleteBook("125", isbnMap, out);
-    Book::printBooks(out, isbnMap);
-    Book::update(isbnObject , "125" , isbnMap , titleMap);
+//    Book::printBooks(out, isbnMap);
+    Book::update(isbnObject , "125" ,out, isbnMap , titleMap);
+//    cout<<"MAIN \n"<<endl;
+//    for(auto it : isbnObject)cout<<it.second<<endl;
     Book::printBooks(out ,isbnMap );
 //    Book::deleteBook("123", isbnMap, out);
 //    Book::printBook("Kafka", titleMap, out);
