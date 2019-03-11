@@ -12,7 +12,6 @@
 *   we need to check how to delete the record
 *   to make compaction write all file in temp file and rewrite it back to the original one
 *   we need to read the head from the file itself
-*   why using short ???
 *
 *
 */
@@ -124,26 +123,13 @@ void deleteBook(fstream & out, char isbn[]){
 }
 
 int main() {
-    freopen("in.txt","r",stdin); ///todo remove this line before pushing reading from my local file , Hanafy
-    ifstream out ;
-    out.open("cmake-build-debug/Hanfy.txt",ios::in);
-//
     short head = -1;
 
     Book testBook;
     fstream recordsFile;
     recordsFile.open("Hanfy.txt", ios::out | ios::in | ios::trunc); ///TODO make sure the program runs correctly in ios::app mode
     recordsFile.write((char*)&head, sizeof(head));
-    /// Reading 1 book as a test
     cin>>testBook;
-    /* cin.getline(testBook.ISBN, sizeof(testBook.ISBN));
-
-    cin.getline(testBook.Author, sizeof(testBook.Author));
-    cin.getline(testBook.Title, sizeof(testBook.Title));
-    //    cin.ignore(); /// Why won't it run properly without this cin.ignore? $Khaled , you shouldn't add cin.ignore after the getline it should before it
-    cin >> testBook.Price;
-    cin >> testBook.Year;
-    cin >> testBook.nPages;*/
     addBook(recordsFile, testBook);
 //    return 0 ;
     deleteBook(recordsFile , "123");
