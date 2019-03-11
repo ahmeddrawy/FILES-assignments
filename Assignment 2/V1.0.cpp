@@ -15,6 +15,20 @@
 *
 *
 */
+
+/** 
+ *  DONE        1-  Delete book (given the ISBN), you are asked to use the avail list technique for fixed length
+ *                  records, so that you can reuse the deleted records in new insertions. The list head is initially
+ *                  assigned ‐1, its data type is: short, and stored at the beginning of the file.
+ * TODO         2- Add book, you must check first if there is a deleted record in the available list or not, if the
+ *                  list head is = ‐1, this means that you should append the new record.
+ * TODO         3 - UPDATE BOOK
+ *
+ *  DONE         4 - PRINT BOOK GIVEN isbn
+ *  TODO         5- PRINT ALL BOOOKS
+ *  TODO         6 - COMPACT FILE
+ *
+ */
 #include <bits/stdc++.h>
 #include <fstream>
 
@@ -81,6 +95,36 @@ void addBook (fstream &out, Book &someBook, long long BYTEOFF = ios::end) ///TOD
     ///else
         ///write at the current head
 }
+Book  readBook(fstream &out , short RRN){
+    long long byte =2+ RRN * sizeof(Book) + 6 * RRN;
+    out.seekg(byte, ios::beg);
+    assert(!(out.end >byte));       /// asserting if the RRN of the desired book outside the file scope
+    Book temp;
+    char delim ;
+    out.read(temp.ISBN , sizeof(temp.ISBN));
+    out.read(&delim, sizeof(delim));
+    out.read(temp.Title, sizeof(temp.Title));
+    out.read(&delim, sizeof(delim));
+    out.read(temp.Author, sizeof(temp.Author));
+    out.read(&delim, sizeof(delim));
+    out.read((char *) &temp.Price, sizeof(temp.Price));
+    out.read(&delim, sizeof(delim));
+    out.read((char *) &temp.Year, sizeof(temp.Year));
+    out.read(&delim, sizeof(delim));
+    out.read((char *) &temp.nPages, sizeof(temp.nPages));
+    out.read(&delim, sizeof(delim));
+    return temp;
+
+}
+void printBook(fstream &out, char isbn[]){
+    for (short rrn = 0; ; ++rrn) {
+      Book temp = readBook(out, rrn);
+      if(strcmp(temp.ISBN , isbn) ==0){
+          cout<<temp;
+          break;
+      }
+    }
+}
 void updateAVAIL(fstream &out , short nOFF){/// not working yet
     out.seekg(0 , ios::beg);
     short temp = 0;
@@ -123,6 +167,7 @@ void deleteBook(fstream & out, char isbn[]){
 }
 
 int main() {
+    freopen("in.txt","r",stdin);
     short head = -1;
 
     Book testBook;
@@ -132,9 +177,8 @@ int main() {
     cin>>testBook;
     addBook(recordsFile, testBook);
 //    return 0 ;
-    deleteBook(recordsFile , "123");
+//    deleteBook(recordsFile , "123");
     recordsFile.seekg(0 ,ios::beg);
-    recordsFile.read((char *) & head , sizeof(head));
-    cout<<head;
+    printBook(recordsFile,"123");
     recordsFile.close();
 }
