@@ -9,11 +9,10 @@
 
 
 /**
- *  TODO         3- PRINT ALL BOOOKS
- *  TODO         4 - COMPACT FILs
- *  DONE/NOT-TESTED 5- Add book, you must check first if there is a deleted record in the available list or not, if the
- *                  list head is = ‐1, this means that you should append the new record.
- *  TODO         6 - UPDATE BOOK
+ *  TODO apply more testing on compactFile function
+ *  TODO UPDATE BOOK
+ *  TODO terminate while loops using the size of the file and comparing it when tellp() (OPTIONAL)
+ *  TODO in function deleteBook, the condition that breaks the loop IS NOT VALID ios::end DOES NOT return the size of the file
  */
 #include <bits/stdc++.h>
 #include <fstream>
@@ -38,10 +37,9 @@ struct Book
         memset(obj.Author , 0 , sizeof(obj.Author));
 
 
-        in.getline( obj.ISBN , sizeof(obj.ISBN));
-        in.getline(obj.Author , sizeof(obj.Author));
+        in.getline(obj.ISBN , sizeof(obj.ISBN));
         in.getline(obj.Title , sizeof(obj.Title));
-
+        in.getline(obj.Author , sizeof(obj.Author));
         in>>obj.Price>>obj.Year>>obj.nPages;
 
         return in ;
@@ -57,9 +55,6 @@ struct Book
         return  out ;
     }
 };
-/** to add to the middle of the file we need to provide a byteoffset
-*  update : i made the byteoffset to make the function work abstractly and we handle the deletion and insertion position somewhere else, Hanafy
-*/
 void addBook (fstream &recordsFile, Book &someBook)
 {
     short currentHead;
@@ -190,6 +185,77 @@ void deleteBook(fstream &recordsFile, char isbn[])
     }
 }
 
+void printAllBooks (fstream &recordsFile)
+{
+    short RRN = 0;
+    while(true)
+    {
+        recordsFile.seekg((2 + RRN * 148), ios::beg);
+        char dummyChar;
+        recordsFile.read(&dummyChar, sizeof(dummyChar));
+        if(recordsFile.tellg() == -1) {break;}
+        if(dummyChar == '*')
+        {
+            RRN++;
+            continue;
+        }
+        Book toPrint = readBook(recordsFile, RRN);
+        cout << toPrint << endl;
+        RRN++;
+    }
+}
+/**
+ * 1- opens new file (tempfile) to store non-deleted records in it
+ * 2- clears (records.txt)
+ * 3- transfers data from (tempfile.txt) to (records.txt)
+ * @param recordsFile
+ */
+void compactFile (fstream &recordsFile)
+{
+    short RRN = 0;
+    short head = -1;
+    fstream tempFile;
+    tempFile.open("tempfile.txt", ios::out | ios::in | ios::binary | ios::trunc);
+    tempFile.write((char*) &head, sizeof(head));
+    while(true)
+    {
+        recordsFile.seekg((2 + RRN * 148), ios::beg);
+        char dummyChar;
+        recordsFile.read(&dummyChar, sizeof(dummyChar));
+        if(recordsFile.tellg() == -1) {break;}
+        if(dummyChar == '*')
+        {
+            RRN++;
+            continue;
+        }
+        Book toAdd = readBook(recordsFile, RRN);
+        addBook(tempFile, toAdd);
+        RRN++;
+    }
+    /**
+     * clearing records file by opening it in truncate mode then reopening it in binary mode
+     */
+    recordsFile.close();
+    recordsFile.open("records.txt", ios::trunc | ios::out | ios::in | ios::binary );
+    recordsFile.close();
+    recordsFile.open("records.txt", ios::out | ios::in | ios::binary);
+    /**
+     * reading from tempfile then writing on records file
+     */
+    recordsFile.write((char*) &head, sizeof(head)); /// writing -1 on the first 2 bytes of records file
+    RRN = 0; /// resetting RRN for looping
+    while(true)
+    {
+        tempFile.seekg((2 + RRN * 148), ios::beg);
+        char dummyChar;
+        tempFile.read(&dummyChar, sizeof(dummyChar)); ///dummyChar to set tellg() flag to false in case the pointer is at the end of the file
+        if (tempFile.tellg() == -1) { break; }
+        Book toAdd = readBook(tempFile, RRN);
+        addBook(recordsFile, toAdd);
+        RRN++;
+    }
+    tempFile.close();
+}
 int main()
 {
     freopen("in.txt","r",stdin);
@@ -197,13 +263,19 @@ int main()
     Book testBook;
     fstream recordsFile;
     recordsFile.open("records.txt", ios::out | ios::in | ios::binary);
-    for(int i = 0; i<3; ++i)
-    {
-        cin >> testBook;
-        addBook(recordsFile, testBook);
-        cin.ignore();
-    }
-//    recordsFile.write((char * )& head    , sizeof(head));
+    recordsFile.write((char * )& head    , sizeof(head));
+//    for(int i=0; i<3; ++i)
+//    {
+//        cin >> testBook;
+//        addBook(recordsFile, testBook);
+//        cin.ignore();
+//    }
+
+
+//    deleteBook(recordsFile, "xxx1");
+//    compactFile(recordsFile);
+//    printAllBooks(recordsFile);
+
 //    cin>>testBook;
 //    cin.ignore();
 //    addBook(recordsFile,testBook);
