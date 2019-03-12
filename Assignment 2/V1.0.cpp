@@ -33,10 +33,17 @@ struct Book
     int  nPages;
     friend istream&operator >> (istream & in , Book &obj ) ///TODO handle cascaded input by sitting ignore() flag.
     {
+        memset(obj.ISBN , 0 , sizeof(obj.ISBN));
+        memset(obj.Title , 0 , sizeof(obj.Title));
+        memset(obj.Author , 0 , sizeof(obj.Author));
+
+
         in.getline( obj.ISBN , sizeof(obj.ISBN));
         in.getline(obj.Author , sizeof(obj.Author));
         in.getline(obj.Title , sizeof(obj.Title));
+
         in>>obj.Price>>obj.Year>>obj.nPages;
+
         return in ;
     }
     friend ostream &operator << (ostream & out  , Book &obj)
@@ -185,10 +192,19 @@ void deleteBook(fstream &recordsFile, char isbn[])
 
 int main()
 {
+    freopen("in.txt","r",stdin);
     short head = -1;
     Book testBook;
     fstream recordsFile;
-    recordsFile.open("records.txt", ios::out | ios::in);
-    recordsFile.write((char*)&head, sizeof(head));
-
+    recordsFile.open("records.txt", ios::out | ios::in | ios::binary);
+    for(int i = 0; i<3; ++i)
+    {
+        cin >> testBook;
+        addBook(recordsFile, testBook);
+        cin.ignore();
+    }
+//    recordsFile.write((char * )& head    , sizeof(head));
+//    cin>>testBook;
+//    cin.ignore();
+//    addBook(recordsFile,testBook);
 }
