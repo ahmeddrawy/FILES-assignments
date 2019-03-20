@@ -7,7 +7,12 @@
 ///NOTE: all seeking operations will be shifted by sizeof(short) because the first 2 bytes of the file contain the current head
 ///NOTE: RRN is 0 based throughout the whole program
 
-
+/* when adding 3 records the rrn breaks from the file when the RRN reaches 4 not 3 i don't know why , checking with tellp != -1
+ *  adding to the file when previously deleted not working
+ *  todo check clearing file if end is reached
+ *
+ *
+ */
 /**
  *  TODO apply more testing on compactFile function
  *  TODO UPDATE BOOK
@@ -19,7 +24,7 @@
 
 using namespace std;
 
-struct Book
+struct Book ///done
 {
     ///STRUCT SIZE = 144 (extra 2 bytes from padding)
     ///SUMMATION OF SIZES OF ALL MEMBERS = 142 = sizeof(ISBN) + sizeof(Title) + ...
@@ -55,7 +60,8 @@ struct Book
         return  out ;
     }
 };
-void addBook (fstream &recordsFile, Book &someBook)
+
+void addBook (fstream &recordsFile, Book &someBook) /// done
 {
     short currentHead;
     recordsFile.seekg(0, ios::beg);
@@ -111,12 +117,20 @@ void addBook (fstream &recordsFile, Book &someBook)
         recordsFile.write(&delimiter, sizeof(delimiter));
     }
 }
-Book  readBook(fstream &out, short RRN)
+Book  readBook(fstream &out, short RRN) /// done
 {
     long long byte = 2 + (RRN) * 148; /// 148 is the size of each record (including all delimiters) in the file
     out.seekg(byte, ios::beg);
-    assert(!(out.end > byte));       /// asserting if the RRN of the desired book outside the file scope
     Book temp;
+    if(out.tellg() == -1){
+        assert(0);
+    }
+/* todo assertion not working i have no idea why
+ * i solved this by out.tellg == -1
+ *
+ */
+//    assert(!(out.end > byte));       /// asserting if the RRN of the desired book outside the file scope
+
     char delim ;
     out.read(temp.ISBN , sizeof(temp.ISBN));
     out.read(&delim, sizeof(delim));
@@ -132,7 +146,19 @@ Book  readBook(fstream &out, short RRN)
     out.read(&delim, sizeof(delim));
     return temp;
 }
-void printBook(fstream &out, char isbn[])
+short Search(fstream &recordsFile , char isbn[]){   ///sequential search on all file to find by ISBN
+
+    for (short rrn = 0; ; ++rrn)
+    {
+        Book temp = readBook(recordsFile, rrn);
+        if(strcmp(temp.ISBN , isbn) == 0)
+        {
+            return (rrn);
+        }
+    }
+
+}
+void printBook(fstream &out, char isbn[])       ///done
 {
     for (short rrn = 0; ; ++rrn)
     {
@@ -150,11 +176,14 @@ void deleteBook(fstream &recordsFile, char isbn[])
     short RRN = 0 ;
     while(true)
     {
-        recordsFile.seekg( (2 + RRN * 148), ios::beg);
-
+        long long Byte = 2+(RRN *148);
+        bool OutsideFileScope = !(recordsFile.end> Byte);
+        assert(OutsideFileScope); /// assert when deleting a record not in the file , Hanafy
+        recordsFile.seekg( Byte, ios::beg);
+        Book temp = readBook(recordsFile ,RRN);
         char tempISBN [6];
-        recordsFile.read(tempISBN , sizeof(tempISBN));
-        if(strcmp(isbn , tempISBN) == 0) /// if we found the book we need to update the avail list
+//        recordsFile.read(tempISBN , sizeof(tempISBN)); /// we have problem here
+        if(strcmp(isbn , temp.ISBN) == 0) /// if we found the book we need to update the avail list
         {
             /**
              * once the desired book has been found the following procedures are taken:
@@ -203,6 +232,7 @@ void printAllBooks (fstream &recordsFile)
         cout << toPrint << endl;
         RRN++;
     }
+    puts("finished");
 }
 /**
  * 1- opens new file (tempfile) to store non-deleted records in it
@@ -256,24 +286,119 @@ void compactFile (fstream &recordsFile)
     }
     tempFile.close();
 }
+void writeWithByteOFFSET(fstream &recordsFile ,long long BYTE ,Book &temp){
+    recordsFile.seekp(BYTE, ios::beg);
+    char delimiter = '#';
+    recordsFile.write(temp.ISBN, sizeof(temp.ISBN));
+    recordsFile.write(&delimiter, sizeof(delimiter));
+
+    recordsFile.write(temp.Title, sizeof(temp.Title));
+    recordsFile.write(&delimiter, sizeof(delimiter));
+
+    recordsFile.write(temp.Author, sizeof(temp.Author));
+    recordsFile.write(&delimiter, sizeof(delimiter));
+
+    recordsFile.write((char*)&temp.Price, sizeof(temp.Price));
+    recordsFile.write(&delimiter, sizeof(delimiter));
+
+    recordsFile.write((char*)&temp.Year, sizeof(temp.Year));
+    recordsFile.write(&delimiter, sizeof(delimiter));
+
+    recordsFile.write((char*)&temp.nPages, sizeof(temp.nPages));
+    recordsFile.write(&delimiter, sizeof(delimiter));
+
+}
+void readWithByteOFFSET(fstream &recordsFile ,long long BYTE ,Book &temp){
+    recordsFile.seekp(BYTE, ios::beg);
+    char delim ;
+    recordsFile.read(temp.ISBN , sizeof(temp.ISBN));
+    recordsFile.read(&delim, sizeof(delim));
+    recordsFile.read(temp.Title, sizeof(temp.Title));
+    recordsFile.read(&delim, sizeof(delim));
+    recordsFile.read(temp.Author, sizeof(temp.Author));
+    recordsFile.read(&delim, sizeof(delim));
+    recordsFile.read((char *) &temp.Price, sizeof(temp.Price));
+    recordsFile.read(&delim, sizeof(delim));
+    recordsFile.read((char *) &temp.Year, sizeof(temp.Year));
+    recordsFile.read(&delim, sizeof(delim));
+    recordsFile.read((char *) &temp.nPages, sizeof(temp.nPages));
+    recordsFile.read(&delim, sizeof(delim));
+}
+void update(fstream &recordsFile,char isbn[]){
+    short RRN = Search(recordsFile ,isbn);
+
+    long long BYTE = 2 + (RRN) * 148;
+    bool OutsideFileScope = !(recordsFile.end > BYTE);
+    assert(OutsideFileScope);           /// aserting if the record not in the file or deleted before
+    cout<<"you can update\n1- isbn \n2-Title \n3-Author\n4-price\n5-Year\n6-Pages\n";
+    int option;
+    do{
+        cout<<"what do you want to update : ";
+        cin >> option;
+    }
+    while(option<0 ||option>6);
+
+    Book temp;
+    readWithByteOFFSET(recordsFile , BYTE , temp);  /// utility function , no checking for boundaries of the file it is used within the system
+    /// the dev should handle it and don't pass BYTE outside the file scope
+    cout<<"The record before update \n";
+    cout<<temp;
+    switch (option){
+        case 1:
+            cin.ignore();
+            cin.getline(temp.ISBN , sizeof(temp.ISBN) );
+            break;
+        case 2:
+            cin.ignore();
+            cin.getline(temp.Title , sizeof(temp.Title) );
+            break;
+        case 3:
+            cin.ignore();
+            cin.getline(temp.Author , sizeof(temp.Author) );
+            break;
+        case 4:
+            cin>>temp.Price;
+            break;
+        case 5:
+            cin>>temp.Year;
+            break;
+        case 6:
+            cin>>temp.nPages;
+            break;
+
+        default:
+            break;
+    }
+    writeWithByteOFFSET(recordsFile,BYTE , temp);
+
+
+
+}
+
+
 int main()
 {
-    freopen("in.txt","r",stdin);
+//    freopen("in.txt","r",stdin);
     short head = -1;
     Book testBook;
     fstream recordsFile;
     recordsFile.open("records.txt", ios::out | ios::in | ios::binary);
-    recordsFile.write((char * )& head    , sizeof(head));
-//    for(int i=0; i<3; ++i)
+//    update(recordsFile ,"isb3");
+//    recordsFile.write((char * )& head    , sizeof(head));
+//    for(int i=0; i<6; ++i)
 //    {
 //        cin >> testBook;
 //        addBook(recordsFile, testBook);
 //        cin.ignore();
 //    }
-
-
 //    deleteBook(recordsFile, "xxx1");
 //    compactFile(recordsFile);
+//    printBook(recordsFile, "isb5");
+//    printBook(recordsFile, "isb5");
+//    printAllBooks(recordsFile);
+//    deleteBook(recordsFile ,"isb5");
+//    compactFile(recordsFile);
+//    printBook(recordsFile, "isb2");
 //    printAllBooks(recordsFile);
 
 //    cin>>testBook;
