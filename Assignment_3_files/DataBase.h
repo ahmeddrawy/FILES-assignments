@@ -5,6 +5,10 @@
 #include <iostream>
 #include <bits/stdc++.h>
 using namespace std;
+/**
+ * todo make function to read all the file then update the indexes by calling the previously made functions
+ *
+ */
 
 #ifndef ASSIGNMENT_3_FILES_DATABASE_H
 #define ASSIGNMENT_3_FILES_DATABASE_H
@@ -48,19 +52,23 @@ private:
     };
     struct sSecondaryIndx{
         char InstructorName[51];
-        int PrimaryIndx = -1 ;
+
+        int InvertedListIndx = -1 ;  /// todo to be update to Inverted list indx
+        bool operator<(sSecondaryIndx & obj){
+            return (strcmp(InstructorName , obj.InstructorName)<0);
+        }
     };
-    struct sInvertedList{
+    struct sInvertedList{   /// todo recheck this and update it to the indx in the primary file
         char PrimaryIndx[6];
         int nxt = -1;
     };
     vector<sPrimaryIndx> mPrimaryIndx;
-    vector<sSecondaryIndx> msecondaryIndx;
+    vector<sSecondaryIndx> msSecondaryIndx;
     vector<sInvertedList> mInvertedList;
     string mDataFilePath = "/home/www/Desktop/files/Files Assignments/Assignment_3_files/DataFile.txt";
-    string mPrimaryIndxPath = "";
-    string mSecondaryIndxFilePath = "";
-    string mInvertedListFilePath = "";
+    string mPrimaryIndxPath = "/home/www/Desktop/files/Files Assignments/Assignment_3_files/PrimaryIndex";
+    string mSecondaryIndxFilePath = "/home/www/Desktop/files/Files Assignments/Assignment_3_files/SecondaryIndex";
+    string mInvertedListFilePath = "/home/www/Desktop/files/Files Assignments/Assignment_3_files/InvertedList";
 
 public:
     DataBase(){
@@ -98,6 +106,44 @@ public:
         for (int i = 0; i <mPrimaryIndx.size() ; ++i) {
             cout<<mPrimaryIndx[i].ID<<endl;
         }
+
+    }
+    void WritePrimaryFile(){    /// todo 13/4/19 17:25,take care of the secondary indx and inverted list
+        if(!this->mIndxUpdated){ /// todo
+
+        }
+        sort(mPrimaryIndx.begin() , mPrimaryIndx.end());
+        fstream out ;
+        out.open (mPrimaryIndxPath.c_str() , ios::trunc | ios::beg);
+        for (int i = 0; i <mPrimaryIndx.size() ; ++i) {
+            out.write((char *)&mPrimaryIndx[i] , sizeof(mPrimaryIndx[i]));
+            sDataRecord toBeSearched = readRecord(mPrimaryIndx[i].offset);
+            sSecondaryIndx tempSecondary ;
+            strcpy(tempSecondary.InstructorName , toBeSearched.Instructor);
+//            tempSecondary.PrimaryIndx = i ; /// todo 
+            msSecondaryIndx.push_back(tempSecondary);
+
+        }
+    }
+    int BinarySearchPrimary(char * arr){
+        if(!this->mIndxUpdated){ ///todo  construct the primary
+
+        }
+        int l = 0 , r = mPrimaryIndx.size() -1 ;
+        while(l<= r){
+            int mid = (l+r )/2;
+            if(strcmp( mPrimaryIndx[mid].ID , arr) == 0 ){
+                return mid;
+            }
+            else if(atoi(mPrimaryIndx[mid].ID ) < atoi(arr)){
+                l = mid +1 ;
+            }
+            else {
+                r = mid -1;
+            }
+
+        }
+        return -1 ;
 
     }
     sDataRecord readRecord( int offset){
