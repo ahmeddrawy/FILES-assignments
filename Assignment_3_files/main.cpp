@@ -3,7 +3,24 @@
 int main() {
 //   freopen("input.txt", "r" ,stdin);
     DataBase m ;
-    m.getRecordsByName();
+    while(true){
+        int x  ; cin >> x ;
+        if(x== 0 ){
+            break;
+        }
+        else  if (x == 1 ){ /// insert record
+            m.getRecordsByName();
+        }
+        else if(x == 2){
+            m.getRecordById();
+        }
+        else if(x == 3 ){
+
+            m.insertRecord();
+
+        }
+    }
+
 //    m.insertRecord();
 //    m.insertRecord();
 //    m.insertRecord();
@@ -15,7 +32,7 @@ int main() {
 //    m.readSecondary();
 //    puts("-----");
 //    m.readInverted();
-//  m.readRecord(1);
+//  m.readRecordByOffset(1);
 //    char ar[3]= "32";
 //    cout<<atoi(ar) +101;
     return 0;

@@ -7,6 +7,8 @@
 using namespace std;
 /**
  * todo make function to read all the file then update the indexes by calling the previously made functions
+ *  if      updated , then load from indx files
+ *  else    load from data file then insert make what we make in insertion by constructing the indxs
  *
  */
 
@@ -22,6 +24,7 @@ private:
         char Instructor[51];
         char Weeks [3] ;
         friend istream&operator>> (istream & in, sDataRecord & temp ){
+            in.ignore();
             cout<<"Please enter the Course ID " ;
             in.getline(temp.ID , 5);
             cout<<"Please enter the Course Name " ;
@@ -73,13 +76,44 @@ private:
 
 public:
     DataBase(){
-        this->readPrimary();
-        this->readSecondary();
-        this->readInverted();
-        sort(mPrimaryIndx.begin() , mPrimaryIndx.end());
-        sort(msSecondaryIndx.begin() , msSecondaryIndx.end());
+        readFlag();
+
+        if(this->mIndxUpdated){
+            cout<<"The Index is Updadted and loading\n";
+            this->readPrimary();
+            this->readSecondary();
+            this->readInverted();
+            sort(mPrimaryIndx.begin() , mPrimaryIndx.end());
+            sort(msSecondaryIndx.begin() , msSecondaryIndx.end());
+            this->invertedRRN = mInvertedList.size();
+        }
+        else { /// construct indx
+            cout<<"Constructing the Records From The Data File \n";
+            ifstream out ; out.open(mDataFilePath.c_str() , ios::in  | ios:: binary );
+            this->TruncIndx();
+
+            out.seekg(0 , ios::end  );
+            if(out.tellg() ==0 ){ /// open file in append mode and add the flag
+                out.close();
+                cout<<"the data file is currently empty"<<endl;
+            }
+            else {
+                out.seekg(1, ios::beg);
+                while(true) {
+                    int offset = out.tellg();
+                    if(offset == -1 ){ /// end of file
+                        break ;
+                    }
+                    sDataRecord tData = readRecordByOffset(offset);
+                    constructIndxForRecord(tData , offset);
+                }
+                this->ChangeFlag(true);
+                out.close();
+            }
+        }
 
     }
+
     void insertRecord(){
         this->ChangeFlag(false);
         sDataRecord temp ;
@@ -97,40 +131,43 @@ public:
         out.write((char *) &len , sizeof(len));
         out.write(Buffer , len );
         out.close();
+        constructIndxForRecord(temp , address);
+
+
+    }
+    void constructIndxForRecord(sDataRecord & obj, int offset){
         sPrimaryIndx tPrimary ;
-        strcpy(tPrimary.ID , temp.ID);
-        tPrimary.offset = address;
+        strcpy(tPrimary.ID , obj.ID);
+        tPrimary.offset = offset;
         sInvertedList tInverted;
         mPrimaryIndx.push_back(tPrimary);
-        int indxOfSecondary =alreadyInSecondary(temp);
+        int indxOfSecondary =BinarySearchSecondary(obj.Instructor);
         if(indxOfSecondary>= 0 ) {
             int curr = msSecondaryIndx[indxOfSecondary ].InvertedListIndx;
-            while(curr != -1 ){
+            while(curr != -1 ){ /// the first iteration can't be -1 because curr is the indx of  inverted list of the first occurence for this name
                 sInvertedList & node=  mInvertedList[curr];
-              curr = node.nxt;
-              if(curr == -1){
-                  node.nxt = invertedRRN++;
-                  sInvertedList iTemp;
-                  iTemp.nxt = -1 ;
-                  strcpy(iTemp.PrimaryIndx ,temp.ID);
-                  mInvertedList.push_back(iTemp);
-                  break;
-              }
+                curr = node.nxt;
+                if(curr == -1){
+                    node.nxt = invertedRRN++;
+                    sInvertedList iTemp;
+                    iTemp.nxt = -1 ;
+                    strcpy(iTemp.PrimaryIndx ,obj.ID);
+                    mInvertedList.push_back(iTemp);
+                    break;
+                }
             }
         }
         else {
             sSecondaryIndx tSecondary;
             tSecondary.InvertedListIndx = invertedRRN++;
-            strcpy(tSecondary.InstructorName , temp.Instructor);
+            strcpy(tSecondary.InstructorName , obj.Instructor);
             msSecondaryIndx.push_back(tSecondary);
-            strcpy(tInverted.PrimaryIndx,  temp.ID);
+            strcpy(tInverted.PrimaryIndx,  obj.ID);
             tInverted.nxt = -1;
             mInvertedList.push_back(tInverted);
         }
-
-
     }
-    int alreadyInSecondary(sDataRecord & obj){
+    int alreadyInSecondary(sDataRecord & obj){ /// todo redundant can be removed we added the binary search
         for (int i = 0; i <msSecondaryIndx.size() ; ++i) {
             if(strcmp(msSecondaryIndx[i].InstructorName , obj.Instructor) == 0){
                 return i ;
@@ -147,7 +184,7 @@ public:
         int indx = this->BinarySearchPrimary(tempId);
         if(indx != -1 ){
             cout<<mPrimaryIndx[indx].ID<<" "<<mPrimaryIndx[indx].offset<<endl; /// todo remove this
-            sDataRecord temp = readRecord(mPrimaryIndx[indx].offset);
+            sDataRecord temp = readRecordByOffset(mPrimaryIndx[indx].offset);
             cout<<temp<<endl;
         }
         else {
@@ -159,16 +196,13 @@ public:
         char Name [51];
         cout<<"Please provide the Instructor Name  you want to search for : ";
         cin>>Name;
-        int indx =  -1 ;
-        for(auto it : msSecondaryIndx){
-            if(strcmp(it.InstructorName , Name) == 0 ){
-                indx  = it.InvertedListIndx;
-            }
-        }
-        if(indx == -1 ){
+        int indxInSecondary = BinarySearchSecondary(Name) ; /// getting the indx of record in secondary
+
+        if(indxInSecondary == -1 ){
             cout<<"No Such a Record \n";
         }
         else {
+            int indx = msSecondaryIndx[indxInSecondary].InvertedListIndx; ///getting the invertedd list indx
             int nxt = indx; /// the indx in the Inverted list vector
             while(nxt != -1) {
                 this->getRecordById(mInvertedList[nxt].PrimaryIndx);    /// getting the record by Id , utility functinon
@@ -186,7 +220,7 @@ public:
         out.open (mPrimaryIndxPath.c_str() , ios::trunc | ios::binary);
         for (int i = 0; i <mPrimaryIndx.size() ; ++i) {
             out.write((char *)&mPrimaryIndx[i] , sizeof(mPrimaryIndx[i]));
-            sDataRecord toBeSearched = readRecord(mPrimaryIndx[i].offset);
+            sDataRecord toBeSearched = readRecordByOffset(mPrimaryIndx[i].offset);
             sSecondaryIndx tempSecondary ;
             strcpy(tempSecondary.InstructorName , toBeSearched.Instructor);
 //            tempSecondary.PrimaryIndx = i ; /// todo
@@ -215,7 +249,30 @@ public:
         return -1 ;
 
     }
-    sDataRecord readRecord( int offset){
+    int BinarySearchSecondary(char * Name){
+        if(!this->mIndxUpdated){ /// todo
+
+        }
+
+        int l = 0 , r = msSecondaryIndx.size();
+        while(l <= r ){
+            int mid = (l+ r)/2;
+            if(strcmp(msSecondaryIndx[mid].InstructorName ,Name) == 0  ){
+                return mid ;
+            }
+            else if(strcmp(msSecondaryIndx[mid].InstructorName , Name) < 0){
+                l = mid +1;
+
+            }
+            else {
+                 r= mid -1;
+            }
+        }
+        return -1;
+
+
+    }
+    sDataRecord readRecordByOffset(int offset){ /// reading record by offset
         fstream out ;
         out.open(mDataFilePath.c_str() , ios::in | ios::binary);
         out.seekg(offset , ios::beg);
@@ -237,6 +294,18 @@ public:
         fstream out;
         out.open(mDataFilePath.c_str() , ios::in | ios::out  | ios::binary );
         out<<state;
+        out.close();
+    }
+    void TruncIndx(){
+        fstream Primary ; Primary.open(mPrimaryIndxPath.c_str(), ios::trunc );
+        fstream Secondary ; Secondary.open(mSecondaryIndxFilePath.c_str(), ios::trunc );
+        fstream Inverted ; Primary.open(mInvertedListFilePath.c_str(), ios::trunc );
+        Primary.close();Secondary.close(); Inverted.close();
+    }
+    void readFlag(){
+        ifstream out; out.open(mDataFilePath.c_str() , ios::in);
+        if(out.good())
+            out.read((char *)&this->mIndxUpdated , 1);
         out.close();
     }
     void writeVectorsToFiles() {
@@ -312,7 +381,11 @@ public:
         out.clear();
         out.close();
     }
+    ~DataBase(){
+        this->writeVectorsToFiles();
+        this->ChangeFlag(true);
 
+    }
 };
 
 #endif //ASSIGNMENT_3_FILES_DATABASE_H
