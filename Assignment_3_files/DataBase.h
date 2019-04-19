@@ -130,7 +130,6 @@ public:
 
 
     }
-
     int alreadyInSecondary(sDataRecord & obj){
         for (int i = 0; i <msSecondaryIndx.size() ; ++i) {
             if(strcmp(msSecondaryIndx[i].InstructorName , obj.Instructor) == 0){
@@ -139,23 +138,12 @@ public:
         }
         return -1 ;
     }
-    int  nxtRRNinInverted(){
-        fstream out ; out.open(mInvertedListFilePath.c_str() , ios::out | ios :: binary);
-        out.seekg(0 , ios::end  );
-        auto it = out.tellg();
-        return it / sizeof(sInvertedList);
-    }
-//    void compare(){/// todo remove this
-//        sort(mPrimaryIndx.begin() , mPrimaryIndx.end());
-//        for (int i = 0; i <mPrimaryIndx.size() ; ++i) {
-//            cout<<mPrimaryIndx[i].ID<<endl;
-//        }
-//
-//    }
-    void getRecordById(){
-        char tempId[6];
-        cout<<"Please enter the ID you want to search for : ";
-        cin>>tempId;
+    void getRecordById(char * tempId = 0) {
+        if(tempId == 0 ) {
+            tempId = new char [6];
+            cout << "Please enter the ID you want to search for : ";
+            cin >> tempId;
+        }
         int indx = this->BinarySearchPrimary(tempId);
         if(indx != -1 ){
             cout<<mPrimaryIndx[indx].ID<<" "<<mPrimaryIndx[indx].offset<<endl; /// todo remove this
@@ -167,9 +155,26 @@ public:
         }
 
     }
-    void getRecordByName(){
-        char Name [51];cin>>Name;
-
+    void getRecordsByName(){
+        char Name [51];
+        cout<<"Please provide the Instructor Name  you want to search for : ";
+        cin>>Name;
+        int indx =  -1 ;
+        for(auto it : msSecondaryIndx){
+            if(strcmp(it.InstructorName , Name) == 0 ){
+                indx  = it.InvertedListIndx;
+            }
+        }
+        if(indx == -1 ){
+            cout<<"No Such a Record \n";
+        }
+        else {
+            int nxt = indx; /// the indx in the Inverted list vector
+            while(nxt != -1) {
+                this->getRecordById(mInvertedList[nxt].PrimaryIndx);    /// getting the record by Id , utility functinon
+                nxt = mInvertedList[nxt].nxt;   /// moving the indx to the nxt one and if -1 we break
+            }
+        }
 
     }
     void WritePrimaryFile(){    /// todo 13/4/19 17:25,take care of the secondary indx and inverted list

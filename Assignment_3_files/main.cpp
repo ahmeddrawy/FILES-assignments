@@ -3,7 +3,7 @@
 int main() {
 //   freopen("input.txt", "r" ,stdin);
     DataBase m ;
-    m.getRecordById();
+    m.getRecordsByName();
 //    m.insertRecord();
 //    m.insertRecord();
 //    m.insertRecord();
