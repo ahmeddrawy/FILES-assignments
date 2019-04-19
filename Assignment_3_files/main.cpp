@@ -3,7 +3,11 @@
 int main() {
 //   freopen("input.txt", "r" ,stdin);
     DataBase m ;
+    m.printIndxes();
+    cout<<"1-get record by name \n2-get record by id \n3-insert new record \n 0- to quit\n";
     while(true){
+
+        cout<<"Enter your choice : ";
         int x  ; cin >> x ;
         if(x== 0 ){
             break;
